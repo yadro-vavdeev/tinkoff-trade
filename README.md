@@ -14,5 +14,10 @@ Create [Tinkoff token](https://tinkoff.github.io/investAPI/token) and add in con
 ## Run
 Run examples:
 ```shell
-python ./contango.py
+$ python ./contango.py
+```
+
+## Run unit tests
+```shell
+$ python -m unittest tests/test_*.py
 ```

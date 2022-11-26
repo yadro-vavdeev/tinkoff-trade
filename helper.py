@@ -5,6 +5,11 @@ from tinkoff.invest.services import Services
 from tinkoff.invest.utils import quotation_to_decimal
 
 
+LOW_LIQUIDITY_ERROR_MSG = "Low liquidity"
+NO_BIDS_ERROR_MSG = "Instrument bids empty or market is closed"
+NO_ASKS_ERROR_MSG = "Instrument asks empty or market is closed"
+
+
 def get_future_detail(services: Services, figi_id: str):
     try:
         return get_future_detail.cache[figi_id]
@@ -13,8 +18,7 @@ def get_future_detail(services: Services, figi_id: str):
         return get_future_detail(**dict(locals().items()))
     except KeyError:
         get_future_detail.cache[figi_id] = services.instruments.future_by(
-            id=figi_id,
-            id_type=InstrumentIdType.INSTRUMENT_ID_TYPE_FIGI
+            id=figi_id, id_type=InstrumentIdType.INSTRUMENT_ID_TYPE_FIGI
         ).instrument
         return get_future_detail.cache[figi_id]
 
@@ -43,16 +47,21 @@ def get_contango(services: Services, ticker: str, future_ticker: str) -> Decimal
     future_ticker_figi = get_figi_by_ticker(services, future_ticker)
 
     # максимальная цена по которой возможно продать фьючерс (шорт)
-    future_price = quotation_to_decimal(services.market_data.get_order_book(
+    future_bids = services.market_data.get_order_book(
         figi=future_ticker_figi,
         depth=1,
-    ).bids[0].price)
+    ).bids
+    if not future_bids:
+        raise RuntimeError(NO_BIDS_ERROR_MSG)
+    future_price = quotation_to_decimal(future_bids[0].price)
 
     # минимальная цена по которой возможно купить акции
     base_asks = services.market_data.get_order_book(
         figi=ticker_figi,
         depth=50,
     ).asks
+    if not base_asks:
+        raise RuntimeError(NO_ASKS_ERROR_MSG)
     base_price = 0
     basic_asset_size_in_future = quotation_to_decimal(
         get_future_detail(services, future_ticker_figi).basic_asset_size
@@ -64,6 +73,6 @@ def get_contango(services: Services, ticker: str, future_ticker: str) -> Decimal
         if not basic_asset_size_in_future:
             break
     else:
-        raise RuntimeError("Low liquidity")
+        raise RuntimeError(LOW_LIQUIDITY_ERROR_MSG)
 
     return (future_price - base_price) / base_price

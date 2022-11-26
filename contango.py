@@ -25,7 +25,8 @@ with Client(TOKEN) as services:
         if future_detail.futures_type == "DELIVERY_TYPE_PHYSICAL_DELIVERY":
             try:
                 contango = get_contango(services=services, ticker=ticker, future_ticker=future)
-            except RuntimeError:
+            except RuntimeError as exc_msg:
+                print(f"Get contango on pair {future} & {ticker} failed: {exc_msg}")
                 continue
             if contango > 0:
                 contango_profit[ticker] = contango

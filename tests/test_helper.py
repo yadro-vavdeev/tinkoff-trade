@@ -62,7 +62,7 @@ class TestHelper(TestCase):
         ]
         mock_attrs = {
             "instruments.find_instrument.return_value": Mock(instruments=instruments_list),
-            "instruments.currencies.return_value": Mock(instruments=currencies_list)
+            "instruments.currencies.return_value": Mock(instruments=currencies_list),
         }
         services = Mock(**mock_attrs)
         result_figi = get_figi_by_ticker(services, ticker)
